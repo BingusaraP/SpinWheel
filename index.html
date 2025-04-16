@@ -49,20 +49,27 @@
     /* ARROW WRAPPER */
     .arrow-wrapper {
       text-align: center;
-      margin-bottom: 60px;
+      margin-top: 10px;
+      margin-bottom: 10px;
     }
     /* DOWNWARD-FACING ARROW using border-bottom */
     .arrow {
-      display: inline-block;
+      display: inline-block;f
       width: 0;
       height: 0;
       border-left: 25px solid transparent;
       border-right: 25px solid transparent;
       border-bottom: 50px solid #F52F57;
+      transform: rotate(180deg)
     }
     /* CANVAS CONTAINER & RESPONSIVE CANVAS */
     .canvas-container {
       width: 100%;
+    }
+    .wheel-wrapper {
+      position: relative;
+      width: 100%;
+      margin: 0 auto;
     }
     #canvas {
       display: block;
@@ -72,26 +79,74 @@
       border-radius: 50%;
       margin: 0 auto;
     }
-    /* SPIN BUTTON */
+    #canvas.spinning {
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { opacity: 0.9; }
+      to { opacity: 1; }
+    }
+    
+    /* CSS-BASED PLAY BUTTON */
     #spin {
-      margin-top: 20px;
-      padding: 15px 35px;
-      font-size: 22px;
-      font-family: 'Montserrat', sans-serif;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100px;
+      height: 100px;
       background-color: #F52F57;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
+      border-radius: 50%;
       cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.15s ease;
+      transition: transform 0.15s ease, background-color 0.3s ease;
+      border: 4px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+    
+    /* Triangle play icon */
+    #spin::after {
+      content: '';
+      display: block;
+      width: 0;
+      height: 0;
+      border-top: 20px solid transparent;
+      border-bottom: 20px solid transparent;
+      border-left: 35px solid white;
+      margin-left: 8px; /* Slight offset to center visually */
+    }
+    
     #spin:hover {
-      background-color: #c0392b;
-      transform: scale(1.03);
+      transform: translate(-50%, -50%) scale(1.05);
+      background-color: #e01c44;
     }
+    
     #spin:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+    
+    /* Add a spinner for when the wheel is spinning */
+    #spin.spinning {
+      background-image: none;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #F52F57;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+    
+    #spin.spinning::after {
+      display: none; /* Hide the play triangle when spinning */
+    }
+    
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
     /* MODAL FOR WINNER ANNOUNCEMENT */
     .modal {
@@ -151,12 +206,13 @@
     <div class="arrow-wrapper">
       <div class="arrow"></div>
     </div>
-    <!-- CANVAS CONTAINER -->
+    <!-- CANVAS CONTAINER WITH WHEEL WRAPPER -->
     <div class="canvas-container">
-      <canvas id="canvas"></canvas>
+      <div class="wheel-wrapper">
+        <canvas id="canvas"></canvas>
+        <button id="spin"></button>
+      </div>
     </div>
-    <!-- SPIN BUTTON -->
-    <button id="spin">Lets Go!</button>
   </div>
   <!-- MODAL FOR WINNER ANNOUNCEMENT -->
   <div id="modal" class="modal">
@@ -170,16 +226,15 @@
   <audio id="spinSound" src="spin-sound.mp3" preload="auto"></audio>
   <audio id="winSound" src="win-sound.mp3" preload="auto"></audio>
   <script>
-    // Updated segments array:
-    // Winning outcomes are those with "pokeman pack" (case-insensitive)
+    // Updated segments array with correct spelling:
     const segments = [
-      "Pokeman Pack",
+      "Pokémon Pack",
       "Try Again",
       "Keep Trying",
-      "Pokeman Pack",
-      "Keep Toing",
+      "Pokémon Pack",
+      "Keep Trying",
       "Try Again",
-      "Pokeman Pack",
+      "Pokémon Pack",
       "Keep Trying"
     ];
 
@@ -265,6 +320,8 @@
     /* SPIN THE WHEEL */
     function spin() {
       document.getElementById("spin").disabled = true;
+      document.getElementById("spin").classList.add("spinning");
+      document.getElementById("canvas").classList.add("spinning");
       spinAngleStart = Math.random() * 10 + 10;
       spinTime = 0;
       // Ensure spin duration is between 7 and 10 seconds
@@ -294,14 +351,44 @@
       const arcd = (arc * 180) / Math.PI;
       const index = Math.floor((360 - (degrees % 360)) / arcd) % segments.length;
       const result = segments[index];
-      if (result.toLowerCase() === "pokeman pack") {
-        document.getElementById("modalHeader").innerText = "Congratulations!";
+      
+      if (result.toLowerCase() === "pokémon pack") {
+        document.getElementById("modalHeader").innerText = "WINNER!";
         showModal("You won a Pokémon booster pack!");
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
+        
+        // Multiple confetti bursts for more excitement
+        const duration = 3000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+          return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+          const timeLeft = animationEnd - Date.now();
+
+          if (timeLeft <= 0) {
+            return clearInterval(interval);
+          }
+
+          const particleCount = 50 * (timeLeft / duration);
+          
+          // Use different colors for confetti
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+            colors: ['#F52F57', '#FFC107', '#2196F3', '#4CAF50'],
+          });
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+            colors: ['#F52F57', '#FFC107', '#2196F3', '#4CAF50'],
+          });
+        }, 250);
+        
         winSound.play();
       } else {
         document.getElementById("modalHeader").innerText = "KEEP TRYING!";
@@ -309,11 +396,11 @@
       }
     }
 
+    // Improved easing function for better physics feel
     function easeOut(t, b, c, d) {
-      t /= d;
-      const ts = t * t;
-      const tc = ts * t;
-      return b + c * (tc - 3 * ts + 3 * t);
+      const ts = (t/=d)*t;
+      const tc = ts*t;
+      return b+c*(tc + -3*ts + 3*t);
     }
 
     function showModal(message) {
@@ -324,6 +411,8 @@
     function closeModal() {
       document.getElementById("modal").style.display = "none";
       document.getElementById("spin").disabled = false;
+      document.getElementById("spin").classList.remove("spinning");
+      document.getElementById("canvas").classList.remove("spinning");
     }
 
     document.getElementById("spin").addEventListener("click", spin);

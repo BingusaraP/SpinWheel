@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fitsmiles Comic Con Prize Wheel</title>
+  <!-- Google Fonts: Bebas Neue (headings) and Montserrat (body) -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+    /* RESET & BASE */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle, #ffffff, #f2f2f2);
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    /* MAIN CONTAINER */
+    .container {
+      background: #fff;
+      border: 4px solid #F52F57; /* Radical Red */
+      border-radius: 12px;
+      padding: 30px 20px 40px;
+      text-align: center;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      max-width: 650px;
+      width: 100%;
+      position: relative;
+    }
+    /* HEADER & LOGO */
+    .logo {
+      font-family: 'Bebas Neue', cursive;
+      color: #F52F57;
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 60px;
+      color: #060606; /* Vampire Black */
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 0px #F52F57;
+    }
+    /* ARROW WRAPPER */
+    .arrow-wrapper {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    /* DOWNWARD-FACING ARROW using border-bottom */
+    .arrow {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-left: 25px solid transparent;
+      border-right: 25px solid transparent;
+      border-bottom: 50px solid #F52F57;
+    }
+    /* CANVAS CONTAINER & RESPONSIVE CANVAS */
+    .canvas-container {
+      width: 100%;
+    }
+    #canvas {
+      display: block;
+      width: 100%;  /* Responsive width */
+      height: auto;
+      border: 3px solid #ddd;
+      border-radius: 50%;
+      margin: 0 auto;
+    }
+    /* SPIN BUTTON */
+    #spin {
+      margin-top: 20px;
+      padding: 15px 35px;
+      font-size: 22px;
+      font-family: 'Montserrat', sans-serif;
+      background-color: #F52F57;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.15s ease;
+    }
+    #spin:hover {
+      background-color: #c0392b;
+      transform: scale(1.03);
+    }
+    #spin:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    /* MODAL FOR WINNER ANNOUNCEMENT */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.65);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      max-width: 400px;
+      width: 80%;
+      position: relative;
+    }
+    .modal-content h2 {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 44px;
+      margin-bottom: 20px;
+      color: #060606;
+    }
+    .modal-content p {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .close {
+      position: absolute;
+      right: 15px;
+      top: 10px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #888;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+    .close:hover {
+      color: #060606;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- FITSMILES LOGO -->
+    <div class="logo">FITSMILES</div>
+    <h1>Comic Con Prize Wheel</h1>
+    <!-- ARROW ABOVE THE CANVAS -->
+    <div class="arrow-wrapper">
+      <div class="arrow"></div>
+    </div>
+    <!-- CANVAS CONTAINER -->
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+    <!-- SPIN BUTTON -->
+    <button id="spin">Lets Go!</button>
+  </div>
+  <!-- MODAL FOR WINNER ANNOUNCEMENT -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="close">&times;</span>
+      <h2 id="modalHeader">Congratulations!</h2>
+      <p id="winnerText"></p>
+    </div>
+  </div>
+  <!-- AUDIO ELEMENTS (Hidden) -->
+  <audio id="spinSound" src="spin-sound.mp3" preload="auto"></audio>
+  <audio id="winSound" src="win-sound.mp3" preload="auto"></audio>
+  <script>
+    // Updated segments array:
+    // Winning outcomes are those with "pokeman pack" (case-insensitive)
+    const segments = [
+      "Pokeman Pack",
+      "Try Again",
+      "Keep Trying",
+      "Pokeman Pack",
+      "Keep Toing",
+      "Try Again",
+      "Pokeman Pack",
+      "Keep Trying"
+    ];
+
+    // Colors: Alternating Radical Red and Vampire Black
+    const colors = [
+      "#F52F57", "#060606", "#F52F57", "#060606",
+      "#F52F57", "#060606", "#F52F57", "#060606"
+    ];
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let outsideRadius, insideRadius, textRadius, arc, startAngle = 0;
+    let spinTimeout = null;
+    let spinAngleStart = 10;
+    let spinTime = 0;
+    let spinTimeTotal = 0;
+
+    // Audio elements for sound effects
+    const spinSound = document.getElementById("spinSound");
+    const winSound = document.getElementById("winSound");
+
+    /* RESPONSIVE CANVAS SIZING */
+    function updateCanvasSize() {
+      const container = document.querySelector(".canvas-container");
+      const size = container.offsetWidth;
+      canvas.width = size;
+      canvas.height = size;
+      outsideRadius = size / 2 - 20;
+      insideRadius = size / 4;
+      textRadius = (outsideRadius + insideRadius) / 2;
+      arc = Math.PI * 2 / segments.length;
+      drawRouletteWheel();
+    }
+
+    /* Helper: Draw curved text along an arc */
+    function drawCurvedText(ctx, text, centerX, centerY, radius, centralAngle) {
+      let totalWidth = 0;
+      for (let char of text) {
+        totalWidth += ctx.measureText(char).width;
+      }
+      const totalAngle = totalWidth / radius;
+      let startAngle = centralAngle - totalAngle / 2;
+      for (let i = 0; i < text.length; i++) {
+        const letter = text[i];
+        const letterWidth = ctx.measureText(letter).width;
+        const letterAngle = letterWidth / radius;
+        const currentAngle = startAngle + letterAngle / 2;
+        const x = centerX + radius * Math.cos(currentAngle);
+        const y = centerY + radius * Math.sin(currentAngle);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(currentAngle + Math.PI/2);
+        ctx.fillText(letter, -letterWidth/2, 0);
+        ctx.restore();
+        startAngle += letterAngle;
+      }
+    }
+
+    /* DRAW THE PRIZE WHEEL */
+    function drawRouletteWheel() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      const fontSize = Math.floor(canvas.width / 30);
+      ctx.font = fontSize + "px Montserrat";
+      for (let i = 0; i < segments.length; i++) {
+        const angle = startAngle + i * arc;
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, outsideRadius, angle, angle + arc, false);
+        ctx.arc(centerX, centerY, insideRadius, angle + arc, angle, true);
+        ctx.fill();
+        ctx.stroke();
+        const midAngle = angle + arc / 2;
+        ctx.fillStyle = "#fff";
+        drawCurvedText(ctx, segments[i], centerX, centerY, textRadius, midAngle);
+      }
+    }
+
+    /* SPIN THE WHEEL */
+    function spin() {
+      document.getElementById("spin").disabled = true;
+      spinAngleStart = Math.random() * 10 + 10;
+      spinTime = 0;
+      // Ensure spin duration is between 7 and 10 seconds
+      spinTimeTotal = Math.random() * 3000 + 7000;
+      spinSound.loop = true;
+      spinSound.play();
+      rotateWheel();
+    }
+
+    function rotateWheel() {
+      spinTime += 30;
+      if (spinTime >= spinTimeTotal) {
+        stopRotateWheel();
+        return;
+      }
+      const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+      startAngle += (spinAngle * Math.PI / 180);
+      drawRouletteWheel();
+      spinTimeout = setTimeout(rotateWheel, 30);
+    }
+
+    function stopRotateWheel() {
+      clearTimeout(spinTimeout);
+      spinSound.pause();
+      spinSound.currentTime = 0;
+      const degrees = (startAngle * 180) / Math.PI + 90;
+      const arcd = (arc * 180) / Math.PI;
+      const index = Math.floor((360 - (degrees % 360)) / arcd) % segments.length;
+      const result = segments[index];
+      if (result.toLowerCase() === "pokeman pack") {
+        document.getElementById("modalHeader").innerText = "Congratulations!";
+        showModal("You won a Pokémon booster pack!");
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        winSound.play();
+      } else {
+        document.getElementById("modalHeader").innerText = "KEEP TRYING!";
+        showModal("You only fail when you give up");
+      }
+    }
+
+    function easeOut(t, b, c, d) {
+      t /= d;
+      const ts = t * t;
+      const tc = ts * t;
+      return b + c * (tc - 3 * ts + 3 * t);
+    }
+
+    function showModal(message) {
+      document.getElementById("winnerText").innerText = message;
+      document.getElementById("modal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("modal").style.display = "none";
+      document.getElementById("spin").disabled = false;
+    }
+
+    document.getElementById("spin").addEventListener("click", spin);
+    document.getElementById("close").addEventListener("click", closeModal);
+    window.addEventListener("click", function(event) {
+      if (event.target === document.getElementById("modal")) {
+        closeModal();
+      }
+    });
+
+    window.addEventListener("resize", updateCanvasSize);
+    updateCanvasSize();
+  </script>
+</body>
+</html>

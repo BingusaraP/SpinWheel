@@ -115,6 +115,7 @@
 
   <audio id="spinSound" src="spin-sound.mp3" preload="auto"></audio>
   <audio id="winSound" src="win-sound.mp3" preload="auto"></audio>
+  <audio id="lostSound" src="lost-sound.mp3" preload="auto"></audio>
 
   <script>
     // --- Wheel Configuration ---
@@ -132,6 +133,7 @@
     let spinTimeout = null, spinAngleStart = 10, spinTime = 0, spinTimeTotal = 0;
     const spinSound = document.getElementById("spinSound");
     const winSound = document.getElementById("winSound");
+    const lostSound = document.getElementById("lostSound");
     const fullscreenBtn = document.getElementById('fullscreen-btn');
     const elem = document.documentElement;
 
@@ -298,10 +300,10 @@
             canvasElement.classList.add("spinning");
             spinAngleStart = Math.random() * 10 + 10;
             spinTime = 0;
-            spinTimeTotal = Math.random() * 3000 + 7000;
+            spinTimeTotal = 7000;
 
             if (spinSound && typeof spinSound.play === 'function') {
-                 spinSound.loop = true;
+                // spinSound.loop = true;
                  spinSound.play().catch(e => console.error("Spin sound play failed:", e));
             } else { console.warn("Spin sound not available."); }
 
@@ -339,7 +341,7 @@
     /* STOP ROTATION AND DETERMINE WINNER */
     function stopRotateWheel() {
         // Ensure button re-enabling happens even if errors occur
-        let spinButton = document.getElementById("spin");
+        /*let spinButton = document.getElementById("spin");
         let canvasElement = document.getElementById("canvas");
         try {
             clearTimeout(spinTimeout);
@@ -380,6 +382,54 @@
                 if(spinButton) spinButton.classList.remove("spinning");
                 if(canvasElement) canvasElement.classList.remove("spinning");
             }, 500);
+        }*/
+
+         // Ensure button re-enabling happens even if errors occur
+         let spinButton = document.getElementById("spin");
+        let canvasElement = document.getElementById("canvas");
+        try {
+            clearTimeout(spinTimeout);
+            if (spinSound) { spinSound.pause(); spinSound.currentTime = 0; }
+
+            const degrees = (startAngle * 180 / Math.PI) % 360;
+            const arcDegrees = arc * 180 / Math.PI;
+            if (!arcDegrees || isNaN(arcDegrees) || arcDegrees === 0) { throw new Error(`Invalid arcDegrees: ${arcDegrees}`); }
+
+            const correctedDegrees = (360 - degrees + 270) % 360;
+            const index = Math.floor(correctedDegrees / arcDegrees) % segments.length;
+            if (isNaN(index) || index < 0 || index >= segments.length) { throw new Error(`Invalid segment index: ${index}`); }
+
+            const result = segments[index];
+            const resultLower = result.toLowerCase();
+
+            if (resultLower === "pokémon booster pack") {
+                document.getElementById("modalHeader").innerText = "WINNER!";
+                showModal("You won the Pokémon Booster Pack!");
+                triggerConfetti();
+                if (winSound) winSound.play().catch(e => console.error("Win sound play failed:", e));
+            } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles") {
+                document.getElementById("modalHeader").innerText = "CONGRATS!";
+                showModal(`You won ${result}!`);
+                 if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e)); // Check winSound before playing
+                triggerConfetti();
+            } else {
+                // This is the losing case
+                document.getElementById("modalHeader").innerText = "KEEP TRYING!";
+                showModal("You only fail when you give up!");
+                if (lostSound) { // Check lostSound before playing
+                    lostSound.play().catch(e => console.error("Lost sound play failed:", e));
+                }
+            }
+        } catch (error) {
+             console.error("Error in stopRotateWheel:", error);
+             showModal("Oops! Something went wrong processing the result.");
+        } finally {
+            // Use finally to ensure UI reset happens
+            setTimeout(() => {
+                if(spinButton) spinButton.disabled = false;
+                if(spinButton) spinButton.classList.remove("spinning");
+                if(canvasElement) canvasElement.classList.remove("spinning");
+            }, 500); // Short delay before re-enabling
         }
     }
     /* Easing function */

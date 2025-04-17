@@ -198,7 +198,11 @@
 
   <script>
     // --- Wheel Configuration ---
-    const segments = [ "Pokémon Pack", "Try Again", "Keep Trying", "Pokémon Pack", "Keep Trying", "Try Again", "Pokémon Pack", "Keep Trying" ];
+    const segments = [
+        "Pokémon Booster Pack", "Try Again", "Keep Trying",
+        "Pokémon Booster Pack", "Keep Trying", "Try Again",
+        "Pokémon Booster Pack", "Keep Trying"
+    ];
     const colors = [ "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57" ];
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -223,7 +227,7 @@
             else { baseSize = Math.min(availableWidth, window.innerHeight * 0.7); }
         } else {
             baseSize = Math.min(window.innerWidth, window.innerHeight) * (isFullscreen ? 0.6 : 0.5);
-            console.warn("Canvas container dimensions not available, using fallback size:", baseSize);
+            // console.warn("Canvas container dimensions not available, using fallback size:", baseSize);
         }
         displaySize = Math.max(Math.floor(baseSize), 150);
         const dpr = window.devicePixelRatio || 1;
@@ -233,28 +237,31 @@
         canvas.style.height = displaySize + 'px';
         outsideRadius = displaySize / 2 - (displaySize * 0.02);
         insideRadius = displaySize / 5;
-        textRadius = outsideRadius * 0.75;
+        textRadius = outsideRadius * 0.70; // Base radius for text placement
         arc = Math.PI * 2 / segments.length;
-        // console.log("Updating canvas size. Display Size:", displaySize); // Debug log
         drawRouletteWheel(); // Draw after size update
     }
 
-    /* Helper: Draw CURVED text along an arc */
-    function drawCurvedText(ctx, text, centerX, centerY, radius, centralAngle, currentDisplaySize) {
-        const fontSize = Math.max(10, Math.floor(currentDisplaySize / 35));
-        ctx.font = `bold ${fontSize}px Montserrat`; // Font set here
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "middle";
-        const maxTextWidth = arc * radius * 0.8;
+    /* Helper: Draw single line of curved text */
+    function drawSingleCurvedLine(ctx, text, centerX, centerY, radius, centralAngle, currentDisplaySize, arcWidth) {
+        const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38)); // Slightly smaller base font
+        ctx.font = `bold ${fontSize}px Montserrat`;
+
+        const maxTextWidth = arcWidth * radius * 0.9; // Allow slightly more width
         let adjustedText = text;
         let textWidth = ctx.measureText(adjustedText).width;
+
+        // Simple truncation if text is too wide
         while (textWidth > maxTextWidth && adjustedText.length > 5) {
              adjustedText = adjustedText.slice(0, -4) + "...";
              textWidth = ctx.measureText(adjustedText).width;
         }
+
         if (radius <= 0) return;
+
         const totalTextAngle = textWidth / radius;
         let currentCharacterAngle = centralAngle - totalTextAngle / 2;
+
         for (let i = 0; i < adjustedText.length; i++) {
             const letter = adjustedText[i];
             const letterWidth = ctx.measureText(letter).width;
@@ -272,9 +279,33 @@
         }
     }
 
+    /* Main function to draw text (handles multi-line case) */
+    function drawCurvedText(ctx, text, centerX, centerY, baseRadius, centralAngle, currentDisplaySize, arcWidth) {
+        ctx.fillStyle = "#fff"; // Common style
+        ctx.textBaseline = "middle";
+        const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38)); // Use the smaller base size
+
+        if (text === "Pokémon Booster Pack") {
+            const line1 = "Pokémon"; // Top/Outer line
+            const line2 = "Booster Pack"; // Bottom/Inner line
+            // Adjust radii for two lines based on font size
+            // Radius 1 (Outer) should be larger, Radius 2 (Inner) should be smaller
+            const radius1 = baseRadius + fontSize * 0.65; // Outer line
+            const radius2 = baseRadius - fontSize * 0.65; // Inner line
+
+            // Draw each line using the helper function with CORRECTED radii
+            drawSingleCurvedLine(ctx, line1, centerX, centerY, radius1, centralAngle, currentDisplaySize, arcWidth);
+            drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth);
+        } else {
+            // Draw other text on a single line using the helper function
+            drawSingleCurvedLine(ctx, text, centerX, centerY, baseRadius, centralAngle, currentDisplaySize, arcWidth);
+        }
+    }
+
+
     /* DRAW THE PRIZE WHEEL */
     function drawRouletteWheel() {
-      if (!displaySize || displaySize <= 0) { console.warn("displaySize invalid, skipping drawRouletteWheel"); return; }
+      if (!displaySize || displaySize <= 0) { /*console.warn("displaySize invalid, skipping drawRouletteWheel");*/ return; }
       const dpr = window.devicePixelRatio || 1;
       const centerX = displaySize / 2;
       const centerY = displaySize / 2;
@@ -293,7 +324,8 @@
         ctx.fill();
         ctx.stroke();
         const midAngle = angle + arc / 2;
-        drawCurvedText(ctx, segments[i], centerX, centerY, textRadius, midAngle, displaySize);
+        // Call the main drawCurvedText function, passing the base textRadius
+        drawCurvedText(ctx, segments[i], centerX, centerY, textRadius, midAngle, displaySize, arc);
       }
       ctx.restore();
     }
@@ -327,8 +359,9 @@
         const arcDegrees = arc * 180 / Math.PI;
         const correctedDegrees = (360 - degrees + 270) % 360;
         const index = Math.floor(correctedDegrees / arcDegrees) % segments.length;
-        const result = segments[index];
-        if (result.toLowerCase() === "pokémon pack") {
+        const result = segments[index]; // Get the text from the segments array
+
+        if (result.toLowerCase() === "pokémon booster pack") {
             document.getElementById("modalHeader").innerText = "WINNER!";
             showModal("You won a Pokémon booster pack!");
             triggerConfetti();
@@ -367,122 +400,57 @@
     const exitFullscreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5m5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5M0 10.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 0 .5.5v4a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 0-1m10.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 0-.5-.5z"/></svg>`;
 
     function updateFullscreenButton() {
-        // console.log("Updating fullscreen button state..."); // Debug log
-        if (!fullscreenBtn) { /*console.log(" - Button not found");*/ return; }
+        if (!fullscreenBtn) return;
         const isCurrentlyFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-        // console.log(" - Is fullscreen?", !!isCurrentlyFullscreen); // Debug log
-        if (isCurrentlyFullscreen) {
-            fullscreenBtn.innerHTML = exitFullscreenIcon;
-            fullscreenBtn.title = "Exit Fullscreen";
-        } else {
-            fullscreenBtn.innerHTML = enterFullscreenIcon;
-            fullscreenBtn.title = "Enter Fullscreen";
-        }
+        if (isCurrentlyFullscreen) { fullscreenBtn.innerHTML = exitFullscreenIcon; fullscreenBtn.title = "Exit Fullscreen"; }
+        else { fullscreenBtn.innerHTML = enterFullscreenIcon; fullscreenBtn.title = "Enter Fullscreen"; }
     }
-
     function toggleFullScreen() {
-        // console.log("Toggle fullscreen called..."); // Debug log
         const fsEnabled = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
-        if (!fsEnabled) { console.warn("Fullscreen API is not supported or enabled."); return; }
-
+        if (!fsEnabled) { console.warn("Fullscreen API not supported."); return; }
         const currentFsElement = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-        // console.log(" - Currently fullscreen?", !!currentFsElement); // Debug log
-
         if (!currentFsElement) {
-            // console.log(" - Requesting fullscreen..."); // Debug log
-            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => { console.error(`FS Error: ${err.message} (${err.name})`); }); }
-            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
-            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
+            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => { console.error(`FS Error: ${err.message}`); }); }
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
         } else {
-            // console.log(" - Exiting fullscreen..."); // Debug log
-            if (document.exitFullscreen) { document.exitFullscreen().catch(err => { console.error(`Exit FS Error: ${err.message} (${err.name})`); }); }
-            else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
-            else if (document.msExitFullscreen) { document.msExitFullscreen(); }
+            if (document.exitFullscreen) { document.exitFullscreen().catch(err => { console.error(`Exit FS Error: ${err.message}`); }); }
+            else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); } else if (document.msExitFullscreen) { document.msExitFullscreen(); }
         }
     }
-
 
     // --- App Initialization ---
-    function initializeApp() {
-        // console.log("Initializing App..."); // Debug log
-        updateCanvasSize(); // Initial draw
-        // Initial button state is set via DOMContentLoaded below
-    }
+    function initializeApp() { updateCanvasSize(); }
 
     // --- Event Listeners Setup ---
     function setupEventListeners() {
-        // console.log("Setting up event listeners..."); // Debug log
         const spinBtn = document.getElementById("spin");
         const closeBtn = document.getElementById("close");
         const modalEl = document.getElementById("modal");
-
         if (spinBtn) spinBtn.addEventListener("click", spin); else console.error("Spin button not found");
         if (closeBtn) closeBtn.addEventListener("click", closeModal); else console.error("Close button not found");
         if (modalEl) window.addEventListener("click", function(event) { if (event.target === modalEl) { closeModal(); } }); else console.error("Modal element not found");
-
-
-        // Debounce resize/fullscreen updates
         let resizeTimeout;
-        function debouncedUpdate() {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(updateCanvasSize, 150);
-        }
+        function debouncedUpdate() { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(updateCanvasSize, 150); }
         window.addEventListener("resize", debouncedUpdate);
         document.addEventListener('fullscreenchange', debouncedUpdate);
         document.addEventListener('webkitfullscreenchange', debouncedUpdate);
         document.addEventListener('msfullscreenchange', debouncedUpdate);
-
-        // Fullscreen Button Setup
         if (fullscreenBtn) {
             const fsEnabled = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
             if (fsEnabled) {
-                // console.log(" - Setting up fullscreen button listener."); // Debug log
                 fullscreenBtn.addEventListener('click', toggleFullScreen);
-                // Listen for fullscreen changes to update button icon
                 document.addEventListener('fullscreenchange', updateFullscreenButton);
                 document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
                 document.addEventListener('msfullscreenchange', updateFullscreenButton);
-            } else {
-                fullscreenBtn.style.display = 'none';
-                console.warn("Fullscreen API is not supported by this browser.");
-            }
-        } else {
-             console.error("Fullscreen button element not found during listener setup.");
-        }
+            } else { fullscreenBtn.style.display = 'none'; console.warn("Fullscreen API not supported."); }
+        } else { console.error("FS button not found."); }
     }
-
 
     // --- Start the App ---
-
-    // 1. Setup listeners that don't depend on fonts first
+    function setInitialButtonState() { if (fullscreenBtn) { updateFullscreenButton(); } }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', setInitialButtonState); } else { setInitialButtonState(); }
     setupEventListeners();
-
-    // 2. Set initial fullscreen button state once DOM is ready
-    // Ensure this runs even if fonts.ready fires first
-    function setInitialButtonState() {
-        // console.log("DOM ready, setting initial button state."); // Debug log
-         if (fullscreenBtn) {
-             updateFullscreenButton(); // Set initial icon
-         } else {
-             // If button isn't found here, there's an issue
-             console.error("Fullscreen button not found on DOMContentLoaded!");
-         }
-    }
-    if (document.readyState === 'loading') { // Loading hasn't finished yet
-        document.addEventListener('DOMContentLoaded', setInitialButtonState);
-    } else { // `DOMContentLoaded` has already fired
-        setInitialButtonState();
-    }
-
-
-    // 3. Wait for fonts then perform initial draw
-    document.fonts.ready.then(() => {
-        // console.log("Fonts ready, performing initial draw."); // Debug log
-        initializeApp(); // Contains updateCanvasSize -> drawRouletteWheel
-    }).catch(error => {
-        console.error("Font loading failed or timed out:", error);
-        initializeApp(); // Initialize anyway
-    });
+    document.fonts.ready.then(() => { initializeApp(); }).catch(error => { console.error("Font loading failed:", error); initializeApp(); });
 
   </script>
 </body>

@@ -120,12 +120,12 @@
   <script>
     // --- Wheel Configuration ---
     const segments = [
-        "10 Fitsmiles", "Try Again", "Keep Trying", "Pokémon Booster Pack",
+        "10 Fitsmiles", "MEFCC Merch", "Mystic gift", "Hidden treasure",
         "Keep Trying", "Try Again", "20 Fitsmiles", "Keep Trying"
     ];
     const colors = [
-        "#060606", "#F52F57", "#060606", "#FFD700", // Gold for Pokémon
-        "#060606", "#F52F57", "#060606", "#F52F57"
+        "#060606", "#F52F57", "#060606", "#FFD700", // Gold for Hidden treasure (Index 3)
+        "#060606", "#F52F57", "#060606", "#F52F57" // Colors repeat
     ];
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -171,11 +171,18 @@
             const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38));
             ctx.font = `bold ${fontSize}px Montserrat`;
 
-            // Determine text color based on the specific text being drawn for this line
-            if (text === "Pokémon" || text === "Booster Pack") {
-                ctx.fillStyle = "#333"; // Darker text for gold background segment parts
+            // Calculate segment index based on angle to determine color
+            // Note: This calculation might need slight adjustment depending on exact startAngle setup,
+            // but the principle is to identify the segment index based on the angle.
+            // Adding a small offset (like arc/100) before flooring can help avoid floating point issues at segment boundaries.
+            let segmentIndexFloat = ((centralAngle - startAngle + Math.PI*4) % (Math.PI*2)) / arc;
+            let segmentIndex = Math.floor(segmentIndexFloat); // Index 0 to segments.length - 1
+
+            // Set text color: Dark for index 3 ("Hidden treasure"), white otherwise
+            if (segmentIndex === 3) {
+                ctx.fillStyle = "#333"; // Darker text for gold background segment
             } else {
-                ctx.fillStyle = "#fff"; // White text for others
+                ctx.fillStyle = "#fff"; // White text for others (including "Mystic gift" at index 2)
             }
             ctx.textBaseline = "middle";
 
@@ -183,6 +190,7 @@
             let adjustedText = text;
             let textWidth = ctx.measureText(adjustedText).width;
 
+            // Basic truncation for very long text on narrow segments
             while (textWidth > maxTextWidth && adjustedText.length > 5) {
                  adjustedText = adjustedText.slice(0, -4) + "...";
                  textWidth = ctx.measureText(adjustedText).width;
@@ -228,18 +236,23 @@
             ctx.textBaseline = "middle";
             const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38));
 
-            if (text === "Pokémon Booster Pack") {
-                const line1 = "Pokémon"; // Top/Outer line
-                const line2 = "Booster Pack"; // Bottom/Inner line
+            // Split text into two lines if it's "Hidden treasure" or "Mystic Gift" (or similar two-word prizes)
+            if (text === "Hidden treasure" || text === "Mystic gift" || text === "MEFCC Merch") {
+                const words = text.split(" ");
+                let line1 = words[0]; // First word
+                let line2 = words.slice(1).join(" "); // Remaining words
+
                 // Ensure radii are positive
-                const radius1 = Math.max(1, baseRadius + fontSize * 0.65); // Outer radius
-                const radius2 = Math.max(1, baseRadius - fontSize * 0.65); // Inner radius
+                const radius1 = Math.max(1, baseRadius + fontSize * 0.65); // Outer radius for line 1
+                const radius2 = Math.max(1, baseRadius - fontSize * 0.65); // Inner radius for line 2
 
                 drawSingleCurvedLine(ctx, line1, centerX, centerY, radius1, centralAngle, currentDisplaySize, arcWidth);
-                drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth);
+                if (line2) { // Only draw line 2 if it exists
+                     drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth);
+                }
             } else {
-                // Draw other text on a single line
-                drawSingleCurvedLine(ctx, text, centerX, centerY, baseRadius, centralAngle, currentDisplaySize, arcWidth);
+                // Draw other shorter/single-word text on a single line (positioned towards inner radius)
+                 drawSingleCurvedLine(ctx, text, centerX, centerY, baseRadius - fontSize * 0.65, centralAngle, currentDisplaySize, arcWidth);
             }
          } catch (error) {
               console.error("Error during drawCurvedText:", error, {text, baseRadius, centralAngle});
@@ -271,14 +284,16 @@
 
             ctx.fillStyle = colors[i % colors.length];
             ctx.beginPath();
+            // Draw segment shape
             ctx.arc(centerX, centerY, outsideRadius, angle, angle + arc, false);
             ctx.arc(centerX, centerY, insideRadius, angle + arc, angle, true);
             ctx.closePath();
             ctx.fill();
-            ctx.stroke();
+            ctx.stroke(); // Draw white lines between segments
+
+            // Draw text for the segment
             const midAngle = angle + arc / 2;
             if (isNaN(midAngle)) { console.error(`Invalid midAngle in draw loop (segment ${i}):`, midAngle); continue; }
-
             drawCurvedText(ctx, segments[i], centerX, centerY, textRadius, midAngle, displaySize, arc);
           }
           ctx.restore();
@@ -298,41 +313,47 @@
             spinButton.disabled = true;
             spinButton.classList.add("spinning");
             canvasElement.classList.add("spinning");
-            spinAngleStart = Math.random() * 10 + 10;
+            spinAngleStart = Math.random() * 10 + 10; // Random initial force
             spinTime = 0;
-            spinTimeTotal = 6500;
+            spinTimeTotal = 6500; // Milliseconds for spin duration
 
             if (spinSound && typeof spinSound.play === 'function') {
-                // spinSound.loop = true;
+                 spinSound.currentTime = 0; // Rewind sound
                  spinSound.play().catch(e => console.error("Spin sound play failed:", e));
             } else { console.warn("Spin sound not available."); }
 
             rotateWheel();
         } catch (error) {
             console.error("Error inside spin() function:", error);
-            // Attempt to reset UI state
+            // Attempt to reset UI state in case of error during spin start
             try {
                 const spinButton = document.getElementById("spin");
                 const canvasElement = document.getElementById("canvas");
                 if(spinButton) spinButton.disabled = false;
                 if(spinButton) spinButton.classList.remove("spinning");
                 if(canvasElement) canvasElement.classList.remove("spinning");
-            } catch (resetError) { console.error("Error resetting UI after spin error:", resetError); }
+            } catch (resetError) { console.error("Error resetting UI after spin start error:", resetError); }
         }
     }
 
     /* ROTATION ANIMATION LOOP */
     function rotateWheel() {
         try {
-            spinTime += 30;
-            if (spinTime >= spinTimeTotal) { stopRotateWheel(); return; }
+            spinTime += 30; // Time increment per frame
+            if (spinTime >= spinTimeTotal) {
+                stopRotateWheel(); // End the spin
+                return;
+            }
+            // Calculate eased rotation speed
             const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+            // Update the wheel's start angle (convert degrees to radians)
             startAngle += (spinAngle * Math.PI / 180);
-            drawRouletteWheel();
-            spinTimeout = setTimeout(rotateWheel, 30);
+            startAngle %= (Math.PI * 2); // Keep angle within 0 to 2PI
+            drawRouletteWheel(); // Redraw the wheel at the new angle
+            spinTimeout = setTimeout(rotateWheel, 30); // Request next frame
         } catch (error) {
             console.error("Error in rotateWheel:", error);
-             clearTimeout(spinTimeout);
+             clearTimeout(spinTimeout); // Stop animation on error
              const spinButton = document.getElementById("spin");
              if(spinButton) spinButton.disabled = false; // Try re-enabling button
         }
@@ -340,99 +361,59 @@
 
     /* STOP ROTATION AND DETERMINE WINNER */
     function stopRotateWheel() {
-        // Ensure button re-enabling happens even if errors occur
-        /*let spinButton = document.getElementById("spin");
-        let canvasElement = document.getElementById("canvas");
+         let spinButton = document.getElementById("spin");
+         let canvasElement = document.getElementById("canvas");
         try {
-            clearTimeout(spinTimeout);
-            if (spinSound) { spinSound.pause(); spinSound.currentTime = 0; }
+            clearTimeout(spinTimeout); // Stop the animation loop
+            if (spinSound) { spinSound.pause(); spinSound.currentTime = 0; } // Stop spin sound
 
-            const degrees = (startAngle * 180 / Math.PI) % 360;
-            const arcDegrees = arc * 180 / Math.PI;
+            // Calculate final position
+            const degrees = (startAngle * 180 / Math.PI) % 360; // Current angle in degrees
+            const arcDegrees = arc * 180 / Math.PI; // Size of each segment in degrees
             if (!arcDegrees || isNaN(arcDegrees) || arcDegrees === 0) { throw new Error(`Invalid arcDegrees: ${arcDegrees}`); }
 
+            // Adjust angle to align with the arrow (pointing straight up at 270 degrees in canvas coords)
             const correctedDegrees = (360 - degrees + 270) % 360;
+            // Determine the winning segment index
             const index = Math.floor(correctedDegrees / arcDegrees) % segments.length;
             if (isNaN(index) || index < 0 || index >= segments.length) { throw new Error(`Invalid segment index: ${index}`); }
 
             const result = segments[index];
             const resultLower = result.toLowerCase();
 
-            if (resultLower === "pokémon booster pack") {
+            // --- Updated Win Logic ---
+            if (resultLower === "hidden treasure") {
                 document.getElementById("modalHeader").innerText = "WINNER!";
-                showModal("You won the Pokémon Booster Pack!");
+                showModal("You won the Hidden treasure!");
                 triggerConfetti();
                 if (winSound) winSound.play().catch(e => console.error("Win sound play failed:", e));
-            } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles") {
+            } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles" || resultLower === "mystic gift" || resultLower === "mefcc merch") {
                 document.getElementById("modalHeader").innerText = "CONGRATS!";
                 showModal(`You won ${result}!`);
-                winSound.play().catch(e => console.error("Audio play failed:", e));
+                 if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e));
                 triggerConfetti();
-            } else {
+            } else { // Losing cases ("Try Again", "Keep Trying")
                 document.getElementById("modalHeader").innerText = "KEEP TRYING!";
                 showModal("You only fail when you give up!");
+                if (lostSound) {
+                    lostSound.play().catch(e => console.error("Lost sound play failed:", e));
+                }
             }
+            // --- End of Updated Win Logic ---
+
         } catch (error) {
              console.error("Error in stopRotateWheel:", error);
-             showModal("Oops! Something went wrong processing the result.");
+             showModal("Oops! Something went wrong processing the result."); // Generic error modal
         } finally {
-            // Use finally to ensure UI reset happens
-            setTimeout(() => {
+            // Use finally to ensure UI reset happens regardless of success or error
+            setTimeout(() => { // Small delay before re-enabling button
                 if(spinButton) spinButton.disabled = false;
                 if(spinButton) spinButton.classList.remove("spinning");
                 if(canvasElement) canvasElement.classList.remove("spinning");
             }, 500);
-        }*/
-
-         // Ensure button re-enabling happens even if errors occur
-         let spinButton = document.getElementById("spin");
-        let canvasElement = document.getElementById("canvas");
-        try {
-            clearTimeout(spinTimeout);
-            if (spinSound) { spinSound.pause(); spinSound.currentTime = 0; }
-
-            const degrees = (startAngle * 180 / Math.PI) % 360;
-            const arcDegrees = arc * 180 / Math.PI;
-            if (!arcDegrees || isNaN(arcDegrees) || arcDegrees === 0) { throw new Error(`Invalid arcDegrees: ${arcDegrees}`); }
-
-            const correctedDegrees = (360 - degrees + 270) % 360;
-            const index = Math.floor(correctedDegrees / arcDegrees) % segments.length;
-            if (isNaN(index) || index < 0 || index >= segments.length) { throw new Error(`Invalid segment index: ${index}`); }
-
-            const result = segments[index];
-            const resultLower = result.toLowerCase();
-
-            if (resultLower === "pokémon booster pack") {
-                document.getElementById("modalHeader").innerText = "WINNER!";
-                showModal("You won the Pokémon Booster Pack!");
-                triggerConfetti();
-                if (winSound) winSound.play().catch(e => console.error("Win sound play failed:", e));
-            } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles") {
-                document.getElementById("modalHeader").innerText = "CONGRATS!";
-                showModal(`You won ${result}!`);
-                 if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e)); // Check winSound before playing
-                triggerConfetti();
-            } else {
-                // This is the losing case
-                document.getElementById("modalHeader").innerText = "KEEP TRYING!";
-                showModal("You only fail when you give up!");
-                if (lostSound) { // Check lostSound before playing
-                    lostSound.play().catch(e => console.error("Lost sound play failed:", e));
-                }
-            }
-        } catch (error) {
-             console.error("Error in stopRotateWheel:", error);
-             showModal("Oops! Something went wrong processing the result.");
-        } finally {
-            // Use finally to ensure UI reset happens
-            setTimeout(() => {
-                if(spinButton) spinButton.disabled = false;
-                if(spinButton) spinButton.classList.remove("spinning");
-                if(canvasElement) canvasElement.classList.remove("spinning");
-            }, 500); // Short delay before re-enabling
         }
     }
-    /* Easing function */
+    /* Easing function (Cubic ease-out) */
     function easeOut(t, b, c, d) { const ts = (t/=d)*t; const tc = ts*t; return b+c*(tc + -3*ts + 3*t); }
     /* Modal Functions */
     function showModal(message) { document.getElementById("winnerText").innerText = message; document.getElementById("modal").style.display = "flex"; }
@@ -442,7 +423,7 @@
     function triggerConfetti() {
     const duration = 2 * 1000;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 };
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 }; // Ensure confetti is above modal if needed
 
     const interval = setInterval(function () {
         const timeLeft = animationEnd - Date.now();
@@ -452,11 +433,15 @@
         }
 
         const particleCount = 50 * (timeLeft / duration);
-        // since particles fall down, start a bit higher than random
+        // Start confetti from random positions near the top
         confetti(Object.assign({}, defaults, {
             particleCount,
             origin: { x: Math.random(), y: Math.random() - 0.2 }
         }));
+        confetti(Object.assign({}, defaults, { // Add a burst from the center top too
+             particleCount: particleCount / 2,
+             origin: { x: 0.5, y: 0 }
+         }));
     }, 250);
 }
 
@@ -464,30 +449,21 @@
     const enterFullscreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>`;
     const exitFullscreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5m5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5M0 10.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 0 .5.5v4a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 0-1m10.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 0-.5-.5z"/></svg>`;
     function updateFullscreenButton() {
-    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-    fullscreenBtn.innerHTML = isFullscreen ? exitFullscreenIcon : enterFullscreenIcon;
-}
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+        fullscreenBtn.innerHTML = isFullscreen ? exitFullscreenIcon : enterFullscreenIcon;
+    }
     function toggleFullScreen() {
-    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-
-    if (!isFullscreen) {
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) { /* Safari */
-            elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) { /* IE11 */
-            elem.msRequestFullscreen();
-        }
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+        if (!isFullscreen) {
+            if (elem.requestFullscreen) { elem.requestFullscreen(); }
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } /* Safari */
+            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } /* IE11 */
+        } else {
+            if (document.exitFullscreen) { document.exitFullscreen(); }
+            else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+            else if (document.msExitFullscreen) { document.msExitFullscreen(); }
         }
     }
-}
 
     // --- App Initialization ---
     function initializeApp() {
@@ -504,6 +480,7 @@
             if (closeBtn) closeBtn.addEventListener("click", closeModal); else console.error("Close button not found");
             if (modalEl) window.addEventListener("click", function(event) { if (event.target === modalEl) { closeModal(); } }); else console.error("Modal element not found");
 
+            // Debounced resize/fullscreen handler
             let resizeTimeout;
             function debouncedUpdate() { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(updateCanvasSize, 150); }
             window.addEventListener("resize", debouncedUpdate);
@@ -511,24 +488,32 @@
             document.addEventListener('webkitfullscreenchange', debouncedUpdate);
             document.addEventListener('msfullscreenchange', debouncedUpdate);
 
+            // Fullscreen Button Setup
             if (fullscreenBtn) {
                 const fsEnabled = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
                 if (fsEnabled) {
-                    // console.log("Attaching fullscreen click listener."); // Keep logs minimal now
                     fullscreenBtn.addEventListener('click', toggleFullScreen);
                     document.addEventListener('fullscreenchange', updateFullscreenButton);
                     document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
                     document.addEventListener('msfullscreenchange', updateFullscreenButton);
+                    updateFullscreenButton(); // Set initial icon
                 } else { fullscreenBtn.style.display = 'none'; console.warn("Fullscreen API not supported."); }
-            } else { console.error("FS button not found during listener setup."); }
+            } else { console.error("Fullscreen button not found during listener setup."); }
         } catch (e) { console.error("Error setting up event listeners:", e); }
     }
 
     // --- Start the App ---
-    function setInitialButtonState() { if (fullscreenBtn) { updateFullscreenButton(); } }
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', setInitialButtonState); } else { setInitialButtonState(); }
     setupEventListeners();
-    document.fonts.ready.then(() => { initializeApp(); }).catch(error => { console.error("Font loading failed:", error); initializeApp(); });
+    // Initialize after fonts are ready or after a timeout
+    Promise.race([
+        document.fonts.ready,
+        new Promise(resolve => setTimeout(resolve, 500)) // Font loading fallback timeout
+    ]).then(() => {
+        initializeApp();
+    }).catch(error => {
+        console.error("Font loading error or timeout:", error);
+        initializeApp(); // Initialize even if fonts fail/timeout
+    });
 
   </script>
 </body>

@@ -120,8 +120,8 @@
   <script>
     // --- Wheel Configuration ---
     const segments = [
-        "10 Fitsmiles", "MEFCC Merch", "Mystic gift", "Hidden treasure",
-        "Keep Trying", "Try Again", "20 Fitsmiles", "Keep Trying"
+        "10 Fitsmiles", "MEFCC Merch", "Try Again", "Hidden Treasure",
+        "Keep Trying", "Mystic Gift", "20 Fitsmiles", "Keep Trying"
     ];
     const colors = [
         "#060606", "#F52F57", "#060606", "#FFD700", // Gold for Hidden treasure (Index 3)
@@ -384,7 +384,7 @@
             // --- Updated Win Logic ---
             if (resultLower === "hidden treasure") {
                 document.getElementById("modalHeader").innerText = "WINNER!";
-                showModal("You won the Hidden treasure!");
+                showModal("You won the Hidden Treasure!");
                 triggerConfetti();
                 if (winSound) winSound.play().catch(e => console.error("Win sound play failed:", e));
             } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles" || resultLower === "mystic gift" || resultLower === "mefcc merch") {

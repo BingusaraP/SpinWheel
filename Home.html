@@ -119,14 +119,15 @@
 
   <script>
     // --- Wheel Configuration ---
+    // *** Updated segments: 1x Spin Again, 2x Sorry ***
     const segments = [
-        "10 Fitsmiles", "MEFCC Merch", "Try Again", "Back 2 Games Item",
-        "Spin Again", "Back 2 Games Item", "20 Fitsmiles", "Spin Again"
+        "10 Fitsmiles", "MEFCC Merch", "Sorry", "Back 2 Games Item", // Replaced "Try Again"
+        "Spin Again", "Back 2 Games Item", "20 Fitsmiles", "Sorry"    // Kept one "Spin Again", replaced the other
     ];
-    // Note: Segment 3 ("Back 2 Games Item") uses color F52F57 (Red)
+    // Colors remain alternating, ensure they match the number of segments
     const colors = [
-        "#060606", "#F52F57", "#060606", "#F52F57",
-        "#060606", "#F52F57", "#060606", "#F52F57"
+        "#060606", "#F52F57", "#060606", "#F52F57", // Black, Red, Black, Red
+        "#060606", "#F52F57", "#060606", "#F52F57"  // Black, Red, Black, Red
     ];
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -172,7 +173,7 @@
             const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38));
             ctx.font = `bold ${fontSize}px Montserrat`;
 
-            // *** Set text color to white for ALL segments ***
+            // Text color defaults to white
             ctx.fillStyle = "#fff";
             ctx.textBaseline = "middle";
 
@@ -228,7 +229,7 @@
                 drawSingleCurvedLine(ctx, line1, centerX, centerY, radius1, centralAngle, currentDisplaySize, arcWidth);
                 if (line2) { drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth); }
             } else {
-                // Draw "Try Again" and other single-line text
+                // Draw "Sorry", "Spin Again" and other single-line text
                  drawSingleCurvedLine(ctx, text, centerX, centerY, baseRadius - fontSize * 0.65, centralAngle, currentDisplaySize, arcWidth);
             }
        } catch (error) { console.error("Error during drawCurvedText:", error, {text, baseRadius, centralAngle}); }
@@ -348,7 +349,7 @@
             const result = segments[index];
             const resultLower = typeof result === 'string' ? result.toLowerCase() : result;
 
-            // Simplified Win/Loss Logic
+            // *** Updated Win/Loss Logic for "Sorry" and "Spin Again" ***
             if (resultLower === "back 2 games item") {
                 document.getElementById("modalHeader").innerText = "WINNER!";
                 showModal("You won the Back 2 Games Item!");
@@ -359,13 +360,18 @@
                 showModal(`You won ${result}!`);
                  if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e));
                 triggerConfetti();
-            } else { // Losing cases ("Try Again", "Spin Again")
-                document.getElementById("modalHeader").innerText = "Don't Give Up!";
-                showModal("You only fail when you give up!");
+            } else { // Losing cases ("Sorry", "Spin Again")
+                document.getElementById("modalHeader").innerText = "BETTER LUCK NEXT TIME!"; // Updated Header
+                if (resultLower === "spin again") {
+                     showModal("So close! Why not Spin Again?");
+                } else { // Must be "Sorry"
+                     showModal("Sorry, Better luck next time!");
+                }
                 if (lostSound) {
                     lostSound.play().catch(e => console.error("Lost sound play failed:", e));
                 }
             }
+            // *** End of Updated Win/Loss Logic ***
 
         } catch (error) {
            console.error("Error in stopRotateWheel:", error);

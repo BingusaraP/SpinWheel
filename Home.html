@@ -361,7 +361,7 @@
                  if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e));
                 triggerConfetti();
             } else { // Losing cases ("Sorry", "Spin Again")
-                document.getElementById("modalHeader").innerText = "BETTER LUCK NEXT TIME!"; // Updated Header
+                document.getElementById("modalHeader").innerText = "Oops!"; // Updated Header
                 if (resultLower === "spin again") {
                      showModal("So close! Why not Spin Again?");
                 } else { // Must be "Sorry"

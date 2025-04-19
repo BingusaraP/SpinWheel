@@ -360,7 +360,7 @@
                  if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e));
                 triggerConfetti();
             } else { // Losing cases ("Try Again", "Spin Again")
-                document.getElementById("modalHeader").innerText = "SPIN AGAIN!";
+                document.getElementById("modalHeader").innerText = "Don't Give Up!";
                 showModal("You only fail when you give up!");
                 if (lostSound) {
                     lostSound.play().catch(e => console.error("Lost sound play failed:", e));

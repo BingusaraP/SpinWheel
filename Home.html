@@ -120,12 +120,13 @@
   <script>
     // --- Wheel Configuration ---
     const segments = [
-        "10 Fitsmiles", "MEFCC Merch", "Try Again", "Hidden Treasure",
-        "Keep Trying", "Mystic Gift", "20 Fitsmiles", "Keep Trying"
+        "10 Fitsmiles", "MEFCC Merch", "Try Again", "Back 2 Games Item",
+        "Spin Again", "Back 2 Games Item", "20 Fitsmiles", "Spin Again"
     ];
+    // Note: Segment 3 ("Back 2 Games Item") uses color F52F57 (Red)
     const colors = [
-        "#060606", "#F52F57", "#060606", "#FFD700", // Gold for Hidden treasure (Index 3)
-        "#060606", "#F52F57", "#060606", "#F52F57" // Colors repeat
+        "#060606", "#F52F57", "#060606", "#F52F57",
+        "#060606", "#F52F57", "#060606", "#F52F57"
     ];
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -160,7 +161,7 @@
         canvas.style.height = displaySize + 'px';
         outsideRadius = displaySize / 2 - (displaySize * 0.02);
         insideRadius = displaySize / 5;
-        textRadius = outsideRadius * 0.70; // Base radius for text
+        textRadius = outsideRadius * 0.70;
         arc = Math.PI * 2 / segments.length;
         drawRouletteWheel();
     }
@@ -171,37 +172,22 @@
             const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38));
             ctx.font = `bold ${fontSize}px Montserrat`;
 
-            // Calculate segment index based on angle to determine color
-            // Note: This calculation might need slight adjustment depending on exact startAngle setup,
-            // but the principle is to identify the segment index based on the angle.
-            // Adding a small offset (like arc/100) before flooring can help avoid floating point issues at segment boundaries.
-            let segmentIndexFloat = ((centralAngle - startAngle + Math.PI*4) % (Math.PI*2)) / arc;
-            let segmentIndex = Math.floor(segmentIndexFloat); // Index 0 to segments.length - 1
-
-            // Set text color: Dark for index 3 ("Hidden treasure"), white otherwise
-            if (segmentIndex === 3) {
-                ctx.fillStyle = "#333"; // Darker text for gold background segment
-            } else {
-                ctx.fillStyle = "#fff"; // White text for others (including "Mystic gift" at index 2)
-            }
+            // *** Set text color to white for ALL segments ***
+            ctx.fillStyle = "#fff";
             ctx.textBaseline = "middle";
 
             const maxTextWidth = arcWidth * radius * 0.9;
             let adjustedText = text;
             let textWidth = ctx.measureText(adjustedText).width;
 
-            // Basic truncation for very long text on narrow segments
             while (textWidth > maxTextWidth && adjustedText.length > 5) {
                  adjustedText = adjustedText.slice(0, -4) + "...";
                  textWidth = ctx.measureText(adjustedText).width;
             }
 
-            if (radius <= 0 || isNaN(radius)) return;
-            if (isNaN(centralAngle)) return;
-
+            if (radius <= 0 || isNaN(radius) || isNaN(centralAngle)) return;
             const totalTextAngle = textWidth / radius;
             if (isNaN(totalTextAngle)) return;
-
             let currentCharacterAngle = centralAngle - totalTextAngle / 2;
             if (isNaN(currentCharacterAngle)) return;
 
@@ -211,11 +197,9 @@
                 const letterAngle = radius > 0 ? letterWidth / radius : 0;
                 const angleForThisCharCenter = currentCharacterAngle + letterAngle / 2;
                 if (isNaN(angleForThisCharCenter)) continue;
-
                 const x = centerX + radius * Math.cos(angleForThisCharCenter);
                 const y = centerY + radius * Math.sin(angleForThisCharCenter);
                 if (isNaN(x) || isNaN(y)) continue;
-
                 ctx.save();
                 ctx.translate(x, y);
                 ctx.rotate(angleForThisCharCenter + Math.PI / 2);
@@ -225,45 +209,36 @@
                 currentCharacterAngle += letterAngle;
                 if (isNaN(currentCharacterAngle)) break;
             }
-        } catch (error) {
-            console.error("Error during drawSingleCurvedLine:", error, {text, radius, centralAngle});
-        }
+        } catch (error) { console.error("Error during drawSingleCurvedLine:", error, {text, radius, centralAngle}); }
     }
 
     /* Main function to draw text (handles multi-line case) */
     function drawCurvedText(ctx, text, centerX, centerY, baseRadius, centralAngle, currentDisplaySize, arcWidth) {
-         try {
+       try {
             ctx.textBaseline = "middle";
             const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38));
 
-            // Split text into two lines if it's "Hidden treasure" or "Mystic Gift" (or similar two-word prizes)
-            if (text === "Hidden treasure" || text === "Mystic gift" || text === "MEFCC Merch") {
+            // Split text only for specific multi-word prizes
+            if (text === "Back 2 Games Item" || text === "MEFCC Merch") {
                 const words = text.split(" ");
-                let line1 = words[0]; // First word
-                let line2 = words.slice(1).join(" "); // Remaining words
-
-                // Ensure radii are positive
-                const radius1 = Math.max(1, baseRadius + fontSize * 0.65); // Outer radius for line 1
-                const radius2 = Math.max(1, baseRadius - fontSize * 0.65); // Inner radius for line 2
-
+                let line1 = words[0];
+                let line2 = words.slice(1).join(" ");
+                const radius1 = Math.max(1, baseRadius + fontSize * 0.65);
+                const radius2 = Math.max(1, baseRadius - fontSize * 0.65);
                 drawSingleCurvedLine(ctx, line1, centerX, centerY, radius1, centralAngle, currentDisplaySize, arcWidth);
-                if (line2) { // Only draw line 2 if it exists
-                     drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth);
-                }
+                if (line2) { drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth); }
             } else {
-                // Draw other shorter/single-word text on a single line (positioned towards inner radius)
+                // Draw "Try Again" and other single-line text
                  drawSingleCurvedLine(ctx, text, centerX, centerY, baseRadius - fontSize * 0.65, centralAngle, currentDisplaySize, arcWidth);
             }
-         } catch (error) {
-              console.error("Error during drawCurvedText:", error, {text, baseRadius, centralAngle});
-         }
+       } catch (error) { console.error("Error during drawCurvedText:", error, {text, baseRadius, centralAngle}); }
     }
 
 
     /* DRAW THE PRIZE WHEEL */
     function drawRouletteWheel() {
       try {
-          if (!displaySize || displaySize <= 0) { console.warn("displaySize invalid in drawRouletteWheel"); return; }
+          if (!displaySize || displaySize <= 0 || !ctx) { console.warn("Wheel dimensions or context not ready for drawing."); return; }
           const dpr = window.devicePixelRatio || 1;
           const centerX = displaySize / 2;
           const centerY = displaySize / 2;
@@ -284,27 +259,25 @@
 
             ctx.fillStyle = colors[i % colors.length];
             ctx.beginPath();
-            // Draw segment shape
             ctx.arc(centerX, centerY, outsideRadius, angle, angle + arc, false);
             ctx.arc(centerX, centerY, insideRadius, angle + arc, angle, true);
             ctx.closePath();
             ctx.fill();
-            ctx.stroke(); // Draw white lines between segments
+            ctx.stroke();
 
-            // Draw text for the segment
             const midAngle = angle + arc / 2;
             if (isNaN(midAngle)) { console.error(`Invalid midAngle in draw loop (segment ${i}):`, midAngle); continue; }
+
+            // Always draw text
             drawCurvedText(ctx, segments[i], centerX, centerY, textRadius, midAngle, displaySize, arc);
           }
           ctx.restore();
-      } catch (error) {
-          console.error("Error during drawRouletteWheel:", error);
-      }
+      } catch (error) { console.error("Error during drawRouletteWheel:", error); }
     }
 
     /* SPIN THE WHEEL ACTION */
     function spin() {
-        console.log("spin() function called."); // Debug log
+        console.log("spin() function called.");
         try {
             const spinButton = document.getElementById("spin");
             const canvasElement = document.getElementById("canvas");
@@ -313,19 +286,18 @@
             spinButton.disabled = true;
             spinButton.classList.add("spinning");
             canvasElement.classList.add("spinning");
-            spinAngleStart = Math.random() * 10 + 10; // Random initial force
+            spinAngleStart = Math.random() * 10 + 10;
             spinTime = 0;
-            spinTimeTotal = 16900; // Milliseconds for spin duration
+            spinTimeTotal = 16900;
 
             if (spinSound && typeof spinSound.play === 'function') {
-                 spinSound.currentTime = 0; // Rewind sound
+                 spinSound.currentTime = 0;
                  spinSound.play().catch(e => console.error("Spin sound play failed:", e));
             } else { console.warn("Spin sound not available."); }
 
             rotateWheel();
         } catch (error) {
             console.error("Error inside spin() function:", error);
-            // Attempt to reset UI state in case of error during spin start
             try {
                 const spinButton = document.getElementById("spin");
                 const canvasElement = document.getElementById("canvas");
@@ -339,74 +311,67 @@
     /* ROTATION ANIMATION LOOP */
     function rotateWheel() {
         try {
-            spinTime += 30; // Time increment per frame
+            spinTime += 30;
             if (spinTime >= spinTimeTotal) {
-                stopRotateWheel(); // End the spin
+                stopRotateWheel();
                 return;
             }
-            // Calculate eased rotation speed
             const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
-            // Update the wheel's start angle (convert degrees to radians)
             startAngle += (spinAngle * Math.PI / 180);
-            startAngle %= (Math.PI * 2); // Keep angle within 0 to 2PI
-            drawRouletteWheel(); // Redraw the wheel at the new angle
-            spinTimeout = setTimeout(rotateWheel, 30); // Request next frame
+            startAngle %= (Math.PI * 2);
+            drawRouletteWheel();
+            spinTimeout = setTimeout(rotateWheel, 30);
         } catch (error) {
             console.error("Error in rotateWheel:", error);
-             clearTimeout(spinTimeout); // Stop animation on error
+             clearTimeout(spinTimeout);
              const spinButton = document.getElementById("spin");
-             if(spinButton) spinButton.disabled = false; // Try re-enabling button
+             if(spinButton) spinButton.disabled = false;
         }
     }
 
     /* STOP ROTATION AND DETERMINE WINNER */
     function stopRotateWheel() {
-         let spinButton = document.getElementById("spin");
-         let canvasElement = document.getElementById("canvas");
+       let spinButton = document.getElementById("spin");
+       let canvasElement = document.getElementById("canvas");
         try {
-            clearTimeout(spinTimeout); // Stop the animation loop
-            if (spinSound) { spinSound.pause(); spinSound.currentTime = 0; } // Stop spin sound
+            clearTimeout(spinTimeout);
+            if (spinSound) { spinSound.pause(); spinSound.currentTime = 0; }
 
-            // Calculate final position
-            const degrees = (startAngle * 180 / Math.PI) % 360; // Current angle in degrees
-            const arcDegrees = arc * 180 / Math.PI; // Size of each segment in degrees
+            const degrees = (startAngle * 180 / Math.PI) % 360;
+            const arcDegrees = arc * 180 / Math.PI;
             if (!arcDegrees || isNaN(arcDegrees) || arcDegrees === 0) { throw new Error(`Invalid arcDegrees: ${arcDegrees}`); }
 
-            // Adjust angle to align with the arrow (pointing straight up at 270 degrees in canvas coords)
             const correctedDegrees = (360 - degrees + 270) % 360;
-            // Determine the winning segment index
             const index = Math.floor(correctedDegrees / arcDegrees) % segments.length;
             if (isNaN(index) || index < 0 || index >= segments.length) { throw new Error(`Invalid segment index: ${index}`); }
 
             const result = segments[index];
-            const resultLower = result.toLowerCase();
+            const resultLower = typeof result === 'string' ? result.toLowerCase() : result;
 
-            // --- Updated Win Logic ---
-            if (resultLower === "hidden treasure") {
+            // Simplified Win/Loss Logic
+            if (resultLower === "back 2 games item") {
                 document.getElementById("modalHeader").innerText = "WINNER!";
-                showModal("You won the Hidden Treasure!");
+                showModal("You won the Back 2 Games Item!");
                 triggerConfetti();
                 if (winSound) winSound.play().catch(e => console.error("Win sound play failed:", e));
-            } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles" || resultLower === "mystic gift" || resultLower === "mefcc merch") {
+            } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles" || resultLower === "mefcc merch") {
                 document.getElementById("modalHeader").innerText = "CONGRATS!";
                 showModal(`You won ${result}!`);
                  if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e));
                 triggerConfetti();
-            } else { // Losing cases ("Try Again", "Keep Trying")
-                document.getElementById("modalHeader").innerText = "KEEP TRYING!";
+            } else { // Losing cases ("Try Again", "Spin Again")
+                document.getElementById("modalHeader").innerText = "SPIN AGAIN!";
                 showModal("You only fail when you give up!");
                 if (lostSound) {
                     lostSound.play().catch(e => console.error("Lost sound play failed:", e));
                 }
             }
-            // --- End of Updated Win Logic ---
 
         } catch (error) {
-             console.error("Error in stopRotateWheel:", error);
-             showModal("Oops! Something went wrong processing the result."); // Generic error modal
+           console.error("Error in stopRotateWheel:", error);
+           showModal("Oops! Something went wrong processing the result.");
         } finally {
-            // Use finally to ensure UI reset happens regardless of success or error
-            setTimeout(() => { // Small delay before re-enabling button
+            setTimeout(() => {
                 if(spinButton) spinButton.disabled = false;
                 if(spinButton) spinButton.classList.remove("spinning");
                 if(canvasElement) canvasElement.classList.remove("spinning");
@@ -419,31 +384,18 @@
     function showModal(message) { document.getElementById("winnerText").innerText = message; document.getElementById("modal").style.display = "flex"; }
     function closeModal() { document.getElementById("modal").style.display = "none"; }
     /* Confetti Function */
-
     function triggerConfetti() {
-    const duration = 2 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 }; // Ensure confetti is above modal if needed
-
-    const interval = setInterval(function () {
-        const timeLeft = animationEnd - Date.now();
-
-        if (timeLeft <= 0) {
-            return clearInterval(interval);
-        }
-
-        const particleCount = 50 * (timeLeft / duration);
-        // Start confetti from random positions near the top
-        confetti(Object.assign({}, defaults, {
-            particleCount,
-            origin: { x: Math.random(), y: Math.random() - 0.2 }
-        }));
-        confetti(Object.assign({}, defaults, { // Add a burst from the center top too
-             particleCount: particleCount / 2,
-             origin: { x: 0.5, y: 0 }
-         }));
-    }, 250);
-}
+        const duration = 2 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 };
+        const interval = setInterval(function () {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) { return clearInterval(interval); }
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount: particleCount / 2, origin: { x: 0.5, y: 0 } }));
+        }, 250);
+    }
 
     // --- Fullscreen API Logic ---
     const enterFullscreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/></svg>`;
@@ -456,8 +408,8 @@
         const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
         if (!isFullscreen) {
             if (elem.requestFullscreen) { elem.requestFullscreen(); }
-            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } /* Safari */
-            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } /* IE11 */
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
         } else {
             if (document.exitFullscreen) { document.exitFullscreen(); }
             else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
@@ -480,7 +432,6 @@
             if (closeBtn) closeBtn.addEventListener("click", closeModal); else console.error("Close button not found");
             if (modalEl) window.addEventListener("click", function(event) { if (event.target === modalEl) { closeModal(); } }); else console.error("Modal element not found");
 
-            // Debounced resize/fullscreen handler
             let resizeTimeout;
             function debouncedUpdate() { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(updateCanvasSize, 150); }
             window.addEventListener("resize", debouncedUpdate);
@@ -488,7 +439,6 @@
             document.addEventListener('webkitfullscreenchange', debouncedUpdate);
             document.addEventListener('msfullscreenchange', debouncedUpdate);
 
-            // Fullscreen Button Setup
             if (fullscreenBtn) {
                 const fsEnabled = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
                 if (fsEnabled) {
@@ -496,7 +446,7 @@
                     document.addEventListener('fullscreenchange', updateFullscreenButton);
                     document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
                     document.addEventListener('msfullscreenchange', updateFullscreenButton);
-                    updateFullscreenButton(); // Set initial icon
+                    updateFullscreenButton();
                 } else { fullscreenBtn.style.display = 'none'; console.warn("Fullscreen API not supported."); }
             } else { console.error("Fullscreen button not found during listener setup."); }
         } catch (e) { console.error("Error setting up event listeners:", e); }
@@ -504,15 +454,14 @@
 
     // --- Start the App ---
     setupEventListeners();
-    // Initialize after fonts are ready or after a timeout
     Promise.race([
         document.fonts.ready,
-        new Promise(resolve => setTimeout(resolve, 500)) // Font loading fallback timeout
+        new Promise(resolve => setTimeout(resolve, 500))
     ]).then(() => {
         initializeApp();
     }).catch(error => {
         console.error("Font loading error or timeout:", error);
-        initializeApp(); // Initialize even if fonts fail/timeout
+        initializeApp();
     });
 
   </script>

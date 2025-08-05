@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fitsmiles Prize Wheel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="    /* Main function to draw text (handles multi-line case) */
+    function drawCurvedText(ctx, text, centerX, centerY, baseRadius, centralAngle, currentDisplaySize, arcWidth) {
+       try {
+            ctx.textBaseline = "middle";
+            const fontSize = Math.max(10, Math.floor(currentDisplaySize / 32));
+            ctx.font = `bold ${fontSize}px Montserrat`;//fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
@@ -132,10 +137,11 @@
   <script>
     // --- Wheel Configuration ---
     // *** COPY AND PASTE YOUR NEW CODE HERE ***
-    // Replace the segments and colors arrays below with code from config.html
+    // Replace the segments, colors, and segmentTypes arrays below with code from config.html
     // Example format:
     // const segments = ["10 Fitsmiles", "MEFCC Merch", "Sorry", "Back 2 Games Item", "Spin Again", "Back 2 Games Item", "20 Fitsmiles", "Sorry"];
     // const colors = ["#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57"];
+    // const segmentTypes = ["credit", "prize", "try_again", "prize", "try_again", "prize", "credit", "try_again"];
   
     
 
@@ -153,11 +159,7 @@
 
 
 
- const segments = [ "1 Marvo Gaming Mousepad", "10 Fitsmiles", "Better Luck Next Time", "1 Marvo Gaming Headset", "Spin Again", "1 Marvo 4in1 Gaming Combo", "10 Fitsmiles", "Sorry" ]; const colors = [ "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57" ];
-
-
-
-
+const segments = [ "1 Marvo Gaming Mousepad", "10 Fitsmiles", "Better Luck Next Time", "1 Marvo Gaming Headset", "Spin Again", "1 Marvo 4in1 Gaming Combo", "10 Fitsmiles", "Sorry" ]; const colors = [ "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57" ]; const segmentTypes = [ "prize", "credit", "try_again", "prize", "try_again", "prize", "credit", "try_again" ];
 
 
 
@@ -208,7 +210,7 @@
     /* Helper: Draw single line of curved text */
     function drawSingleCurvedLine(ctx, text, centerX, centerY, radius, centralAngle, currentDisplaySize, arcWidth) {
         try {
-            const fontSize = Math.max(8, Math.floor(currentDisplaySize / 42));
+            const fontSize = Math.max(10, Math.floor(currentDisplaySize / 40));
             ctx.font = `bold ${fontSize}px Montserrat`;
 
             // Text color defaults to white
@@ -429,31 +431,28 @@
             if (isNaN(index) || index < 0 || index >= segments.length) { throw new Error(`Invalid segment index: ${index}`); }
 
             const result = segments[index];
-            const resultLower = typeof result === 'string' ? result.toLowerCase() : result;
+            const segmentType = segmentTypes[index];
 
-            // *** Updated Win/Loss Logic for "Sorry" and "Spin Again" ***
-            if (resultLower === "back 2 games item") {
+            // *** Win/Loss Logic based on segment type ***
+            if (segmentType === "prize" || segmentType === "credit") {
+                // Winning cases - actual prizes and credits
                 document.getElementById("modalHeader").innerText = "WINNER!";
-                showModal("You won the Back 2 Games Item!");
+                showModal(`Congratulations! You won ${result}!`);
                 triggerConfetti();
                 if (winSound) winSound.play().catch(e => console.error("Win sound play failed:", e));
-            } else if (resultLower === "10 fitsmiles" || resultLower === "20 fitsmiles" || resultLower === "mefcc merch") {
-                document.getElementById("modalHeader").innerText = "CONGRATS!";
-                showModal(`You won ${result}!`);
-                 if (winSound) winSound.play().catch(e => console.error("Audio play failed:", e));
-                triggerConfetti();
-            } else { // Losing cases ("Sorry", "Spin Again")
-                document.getElementById("modalHeader").innerText = "Oops!"; // Updated Header
-                if (resultLower === "spin again") {
+            } else {
+                // Losing cases - try_again type
+                document.getElementById("modalHeader").innerText = "Oops!";
+                if (result.toLowerCase().includes("spin again")) {
                      showModal("So close! Why not Spin Again?");
-                } else { // Must be "Sorry"
-                     showModal("Sorry, Better luck next time!");
+                } else {
+                     showModal("Better luck next time!");
                 }
                 if (lostSound) {
                     lostSound.play().catch(e => console.error("Lost sound play failed:", e));
                 }
             }
-            // *** End of Updated Win/Loss Logic ***
+            // *** End of Win/Loss Logic ***
 
         } catch (error) {
            console.error("Error in stopRotateWheel:", error);

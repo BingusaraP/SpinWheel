@@ -19,6 +19,9 @@
     #fullscreen-btn { position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.2); border: none; color: white; padding: 8px; border-radius: 50%; cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease; z-index: 20; }
     #fullscreen-btn:hover { background: rgba(255, 255, 255, 0.4); }
     #fullscreen-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    /* CONFIG BUTTON */
+    #config-btn { position: absolute; top: 15px; right: 60px; background: rgba(255, 255, 255, 0.2); border: none; color: white; padding: 8px; border-radius: 50%; cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease; z-index: 20; }
+    #config-btn:hover { background: rgba(255, 255, 255, 0.4); }
     /* HEADER CONTENT */
     .header-content { width: 100%; text-align: center; margin-bottom: 20px; padding-top: 30px; transition: all 0.3s ease; flex-shrink: 0; }
     /* WHEEL CONTENT */
@@ -61,6 +64,7 @@
         #spin:not(body:fullscreen #spin) { width: 100px; height: 100px; }
         #spin.spinning:not(body:fullscreen #spin.spinning) { width: 60px; height: 60px; }
         #fullscreen-btn:not(body:fullscreen #fullscreen-btn) { top: 20px; right: 20px; }
+        #config-btn:not(body:fullscreen #config-btn) { top: 20px; right: 65px; }
     }
     /* FULLSCREEN */
     body:fullscreen .container { max-width: none; height: 100%; width: 100%; border-radius: 0; padding: 2vmin; flex-direction: row; justify-content: center; align-items: center; }
@@ -73,12 +77,20 @@
     body:fullscreen #spin { width: clamp(80px, 18vmin, 120px); height: clamp(80px, 18vmin, 120px); }
     body:fullscreen #spin.spinning { width: clamp(50px, 12vmin, 80px); height: clamp(50px, 12vmin, 80px); }
     body:fullscreen #fullscreen-btn { top: 20px; right: 20px; }
+    body:fullscreen #config-btn { top: 20px; right: 65px; }
   </style>
 </head>
 <body>
   <div class="container">
     <button id="fullscreen-btn" title="Toggle Fullscreen">
         </button>
+    
+    <button id="config-btn" title="Configure Wheel">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" style="width: 18px; height: 18px; fill: currentColor;">
+        <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+        <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
+      </svg>
+    </button>
 
     <div class="header-content">
       <div class="logo">
@@ -119,16 +131,42 @@
 
   <script>
     // --- Wheel Configuration ---
-    // *** Updated segments: 1x Spin Again, 2x Sorry ***
-    const segments = [
-        "10 Fitsmiles", "MEFCC Merch", "Sorry", "Back 2 Games Item", // Replaced "Try Again"
-        "Spin Again", "Back 2 Games Item", "20 Fitsmiles", "Sorry"    // Kept one "Spin Again", replaced the other
-    ];
-    // Colors remain alternating, ensure they match the number of segments
-    const colors = [
-        "#060606", "#F52F57", "#060606", "#F52F57", // Black, Red, Black, Red
-        "#060606", "#F52F57", "#060606", "#F52F57"  // Black, Red, Black, Red
-    ];
+    // *** COPY AND PASTE YOUR NEW CODE HERE ***
+    // Replace the segments and colors arrays below with code from config.html
+    // Example format:
+    // const segments = ["10 Fitsmiles", "MEFCC Merch", "Sorry", "Back 2 Games Item", "Spin Again", "Back 2 Games Item", "20 Fitsmiles", "Sorry"];
+    // const colors = ["#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57"];
+  
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ const segments = [ "1 Marvo Gaming Mousepad", "10 Fitsmiles", "Better Luck Next Time", "1 Marvo Gaming Headset", "Spin Again", "1 Marvo 4in1 Gaming Combo", "10 Fitsmiles", "Sorry" ]; const colors = [ "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57" ];
+
+
+
+
+
+
+
+
+
+
+
+
+    // *** END OF COPY/PASTE SECTION ***
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     let outsideRadius, insideRadius, textRadius, arc, startAngle = 0, displaySize;
@@ -434,8 +472,11 @@
             const spinBtn = document.getElementById("spin");
             const closeBtn = document.getElementById("close");
             const modalEl = document.getElementById("modal");
+            const configBtn = document.getElementById("config-btn");
+            
             if (spinBtn) spinBtn.addEventListener("click", spin); else console.error("Spin button not found");
             if (closeBtn) closeBtn.addEventListener("click", closeModal); else console.error("Close button not found");
+            if (configBtn) configBtn.addEventListener("click", () => window.open("config.html", "_blank")); else console.error("Config button not found");
             if (modalEl) window.addEventListener("click", function(event) { if (event.target === modalEl) { closeModal(); } }); else console.error("Modal element not found");
 
             let resizeTimeout;

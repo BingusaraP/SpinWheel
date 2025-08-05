@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fitsmiles Comic Con Prize Wheel</title>
+  <title>Fitsmiles Prize Wheel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
@@ -97,7 +97,7 @@
           <img src="fitsmile_logo.png" alt="Fitsmiles Logo"
                onerror="this.parentElement.innerHTML = '<div style=\'font-family: Bebas Neue, cursive; color: white; font-size: 48px;\'>FITSMILES</div>';">
       </div>
-      <h1>Comic Con Prize Wheel</h1>
+      <h1>Prize Wheel</h1>
     </div>
 
     <div class="wheel-content">
@@ -208,18 +208,19 @@
     /* Helper: Draw single line of curved text */
     function drawSingleCurvedLine(ctx, text, centerX, centerY, radius, centralAngle, currentDisplaySize, arcWidth) {
         try {
-            const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38));
+            const fontSize = Math.max(8, Math.floor(currentDisplaySize / 42));
             ctx.font = `bold ${fontSize}px Montserrat`;
 
             // Text color defaults to white
             ctx.fillStyle = "#fff";
             ctx.textBaseline = "middle";
 
-            const maxTextWidth = arcWidth * radius * 0.9;
+            const maxTextWidth = arcWidth * radius * 0.85;
             let adjustedText = text;
             let textWidth = ctx.measureText(adjustedText).width;
 
-            while (textWidth > maxTextWidth && adjustedText.length > 5) {
+            // More aggressive text shortening for better fit
+            while (textWidth > maxTextWidth && adjustedText.length > 3) {
                  adjustedText = adjustedText.slice(0, -4) + "...";
                  textWidth = ctx.measureText(adjustedText).width;
             }
@@ -251,24 +252,67 @@
         } catch (error) { console.error("Error during drawSingleCurvedLine:", error, {text, radius, centralAngle}); }
     }
 
+    /* Helper function to split text into multiple lines based on length */
+    function splitTextIntoLines(ctx, text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+
+        for (let i = 0; i < words.length; i++) {
+            const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
+            const metrics = ctx.measureText(testLine);
+            
+            if (metrics.width > maxWidth && currentLine !== '') {
+                lines.push(currentLine);
+                currentLine = words[i];
+            } else {
+                currentLine = testLine;
+            }
+        }
+        
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+        
+        return lines;
+    }
+
     /* Main function to draw text (handles multi-line case) */
     function drawCurvedText(ctx, text, centerX, centerY, baseRadius, centralAngle, currentDisplaySize, arcWidth) {
        try {
             ctx.textBaseline = "middle";
-            const fontSize = Math.max(10, Math.floor(currentDisplaySize / 38));
+            const fontSize = Math.max(8, Math.floor(currentDisplaySize / 42));
+            ctx.font = `bold ${fontSize}px Montserrat`;
 
-            // Split text only for specific multi-word prizes
-            if (text === "Back 2 Games Item" || text === "MEFCC Merch") {
-                const words = text.split(" ");
-                let line1 = words[0];
-                let line2 = words.slice(1).join(" ");
-                const radius1 = Math.max(1, baseRadius + fontSize * 0.65);
-                const radius2 = Math.max(1, baseRadius - fontSize * 0.65);
-                drawSingleCurvedLine(ctx, line1, centerX, centerY, radius1, centralAngle, currentDisplaySize, arcWidth);
-                if (line2) { drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth); }
+            // Calculate maximum text width for this segment
+            const maxTextWidth = arcWidth * baseRadius * 0.85;
+            
+            // Split text into lines if it's too long
+            const lines = splitTextIntoLines(ctx, text, maxTextWidth);
+            
+            // If we have multiple lines, adjust positioning
+            if (lines.length > 1) {
+                const lineSpacing = fontSize * 1.2;
+                const totalHeight = (lines.length - 1) * lineSpacing;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const lineRadius = baseRadius + (totalHeight / 2) - (i * lineSpacing);
+                    drawSingleCurvedLine(ctx, lines[i], centerX, centerY, Math.max(1, lineRadius), centralAngle, currentDisplaySize, arcWidth);
+                }
             } else {
-                // Draw "Sorry", "Spin Again" and other single-line text
-                 drawSingleCurvedLine(ctx, text, centerX, centerY, baseRadius - fontSize * 0.65, centralAngle, currentDisplaySize, arcWidth);
+                // Single line - use existing logic for better compatibility
+                if (text === "Back 2 Games Item" || text === "MEFCC Merch") {
+                    const words = text.split(" ");
+                    let line1 = words[0];
+                    let line2 = words.slice(1).join(" ");
+                    const radius1 = Math.max(1, baseRadius + fontSize * 0.65);
+                    const radius2 = Math.max(1, baseRadius - fontSize * 0.65);
+                    drawSingleCurvedLine(ctx, line1, centerX, centerY, radius1, centralAngle, currentDisplaySize, arcWidth);
+                    if (line2) { drawSingleCurvedLine(ctx, line2, centerX, centerY, radius2, centralAngle, currentDisplaySize, arcWidth); }
+                } else {
+                    // Draw single-line text
+                    drawSingleCurvedLine(ctx, text, centerX, centerY, baseRadius, centralAngle, currentDisplaySize, arcWidth);
+                }
             }
        } catch (error) { console.error("Error during drawCurvedText:", error, {text, baseRadius, centralAngle}); }
     }

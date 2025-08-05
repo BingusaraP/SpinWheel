@@ -155,15 +155,44 @@
 
 
 
+const segments = [
+  "1 Marvo Gaming Mousepad",
+  "10 Fitsmiles",
+  "Better Luck Next Time",
+  "1 Marvo 4in1 Gaming Combo",
+  "Spin Again",
+  "20 Fitsmiles",
+  "5 Fitsmiles",
+  "Sorry",
+  "1 Marvo Gaming Headset",
+  "Better Luck Next Time"
+];
 
+const colors = [
+  "#060606",
+  "#F52F57",
+  "#060606",
+  "#F52F57",
+  "#060606",
+  "#F52F57",
+  "#060606",
+  "#F52F57",
+  "#060606",
+  "#F52F57"
+];
 
-
-
-const segments = [ "1 Marvo Gaming Mousepad", "10 Fitsmiles", "Better Luck Next Time", "1 Marvo Gaming Headset", "Spin Again", "1 Marvo 4in1 Gaming Combo", "10 Fitsmiles", "Sorry" ]; const colors = [ "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57", "#060606", "#F52F57" ]; const segmentTypes = [ "prize", "credit", "try_again", "prize", "try_again", "prize", "credit", "try_again" ];
-
-
-
-
+const segmentTypes = [
+  "prize",
+  "credit",
+  "try_again",
+  "prize",
+  "try_again",
+  "credit",
+  "credit",
+  "try_again",
+  "prize",
+  "try_again"
+];
 
 
 
@@ -371,7 +400,7 @@ const segments = [ "1 Marvo Gaming Mousepad", "10 Fitsmiles", "Better Luck Next 
             spinButton.disabled = true;
             spinButton.classList.add("spinning");
             canvasElement.classList.add("spinning");
-            spinAngleStart = Math.random() * 10 + 10;
+            spinAngleStart = Math.random() * 24 + 10;
             spinTime = 0;
             spinTimeTotal = 16900;
 
